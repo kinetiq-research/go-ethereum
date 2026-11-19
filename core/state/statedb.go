@@ -1676,6 +1676,10 @@ func (s *StateDB) AddSlotToAccessList(addr common.Address, slot common.Hash) {
 	}
 }
 
+func (s *StateDB) SetWarmAddresses(warm map[common.Address]struct{}) {
+	s.accessList.warm = warm
+}
+
 // AddressInAccessList returns true if the given address is in the access list.
 func (s *StateDB) AddressInAccessList(addr common.Address) bool {
 	return s.accessList.ContainsAddress(addr)

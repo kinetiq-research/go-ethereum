@@ -125,6 +125,10 @@ func (s *hookedStateDB) Empty(addr common.Address) bool {
 	return s.inner.Empty(addr)
 }
 
+func (s *hookedStateDB) SetWarmAddresses(warm map[common.Address]struct{}) {
+	s.inner.SetWarmAddresses(warm)
+}
+
 func (s *hookedStateDB) AddressInAccessList(addr common.Address) bool {
 	return s.inner.AddressInAccessList(addr)
 }

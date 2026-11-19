@@ -28,12 +28,14 @@ import (
 type accessList struct {
 	addresses map[common.Address]int
 	slots     []map[common.Hash]struct{}
+	warm      map[common.Address]struct{}
 }
 
 // ContainsAddress returns true if the address is in the access list.
 func (al *accessList) ContainsAddress(address common.Address) bool {
 	_, ok := al.addresses[address]
-	return ok
+	_, warm := al.warm[address]
+	return ok || warm
 }
 
 // Contains checks if a slot within an account is present in the access list, returning
@@ -42,7 +44,8 @@ func (al *accessList) Contains(address common.Address, slot common.Hash) (addres
 	idx, ok := al.addresses[address]
 	if !ok {
 		// no such address (and hence zero slots)
-		return false, false
+		_, warm := al.warm[address]
+		return warm, false
 	}
 	if idx == -1 {
 		// address yes, but no slots
@@ -64,6 +67,7 @@ func (al *accessList) Copy() *accessList {
 	cp := &accessList{
 		addresses: maps.Clone(al.addresses),
 		slots:     make([]map[common.Hash]struct{}, len(al.slots)),
+		warm:      al.warm,
 	}
 	for i, slotMap := range al.slots {
 		cp.slots[i] = maps.Clone(slotMap)
