@@ -18,7 +18,9 @@ package poseidon
 
 import (
 	"encoding/hex"
+	"math"
 	"math/big"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/holiman/uint256"
@@ -66,11 +68,32 @@ var hashVectors = []struct {
 		want: "2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864",
 	},
 	{
-		// Largest canonical inputs (r-1); computed with an offline reference permutation.
+		// Largest canonical inputs (r-1); go-iden3-crypto v2.0.0 poseidon.Hash.
 		name: "[r-1,r-1]",
 		a:    "30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",
 		b:    "30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",
 		want: "2c6bd813a6338781378d8706cb82fd4216ab52b752ccd41564d7b98756a6e0fb",
+	},
+	{
+		// Swapped [1,2]: the hash is not symmetric; go-iden3-crypto v2.0.0 poseidon.Hash.
+		name: "[2,1]",
+		a:    "0000000000000000000000000000000000000000000000000000000000000002",
+		b:    "0000000000000000000000000000000000000000000000000000000000000001",
+		want: "1576c555b70c9b778666e91d600fdc6d73f30aeed2f6adc5360d6a052259775a",
+	},
+	{
+		// go-iden3-crypto v2.0.0 poseidon.Hash.
+		name: "[0,r-1]",
+		a:    "0000000000000000000000000000000000000000000000000000000000000000",
+		b:    "30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",
+		want: "28b2de3348b15076cbe645321cd2abbd0d2812669574ed4d5f978fe4e7de98bc",
+	},
+	{
+		// go-iden3-crypto v2.0.0 poseidon.Hash.
+		name: "[r-1,0]",
+		a:    "30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",
+		b:    "0000000000000000000000000000000000000000000000000000000000000000",
+		want: "1b694eae0d9995b3dd1f09a0f15f950cfb003d1bd4e8b68d3285a3a8fe319438",
 	},
 }
 
@@ -89,6 +112,87 @@ func TestHash2Vectors(t *testing.T) {
 		gotBytes := got.Bytes32()
 		if hex.EncodeToString(gotBytes[:]) != v.want {
 			t.Errorf("%s: got %x, want %s", v.name, gotBytes, v.want)
+		}
+	}
+}
+
+// refHash2 is a math/big transcription of the permutation. It shares the
+// parameter tables with Hash2 but none of its uint256 arithmetic.
+func refHash2(a, b *big.Int) *big.Int {
+	p := modulus.ToBig()
+	five := big.NewInt(5)
+	state := [width]*big.Int{new(big.Int), new(big.Int).Set(a), new(big.Int).Set(b)}
+	for r := range rounds {
+		full := r < fullRounds/2 || r >= fullRounds/2+partialRounds
+		for i := range state {
+			state[i].Add(state[i], ark[r*width+i].ToBig())
+			if full || i == 0 {
+				state[i].Exp(state[i], five, p)
+			}
+		}
+		var next [width]*big.Int
+		for i := range next {
+			next[i] = new(big.Int)
+			for j := range state {
+				next[i].Add(next[i], new(big.Int).Mul(mds[i][j].ToBig(), state[j]))
+			}
+			next[i].Mod(next[i], p)
+		}
+		state = next
+	}
+	return state[0]
+}
+
+// TestHash2Reference compares Hash2 with refHash2 on limb-boundary values and
+// on pseudo-random field elements, and checks that Hash2 leaves its inputs
+// untouched, also when both arguments are the same pointer.
+func TestHash2Reference(t *testing.T) {
+	check := func(a, b *uint256.Int) {
+		t.Helper()
+		a0, b0 := *a, *b
+		got := Hash2(a, b)
+		if *a != a0 || *b != b0 {
+			t.Fatalf("Hash2(%s, %s) modified its inputs", a0.Hex(), b0.Hex())
+		}
+		if want := refHash2(a.ToBig(), b.ToBig()); got.ToBig().Cmp(want) != 0 {
+			t.Fatalf("Hash2(%s, %s): got %s, want %x", a.Hex(), b.Hex(), got.Hex(), want)
+		}
+	}
+	pow2 := func(n uint) *uint256.Int { return new(uint256.Int).Lsh(uint256.NewInt(1), n) }
+	edges := []*uint256.Int{
+		uint256.NewInt(0), uint256.NewInt(1), uint256.NewInt(2),
+		new(uint256.Int).SubUint64(modulus, 1), new(uint256.Int).SubUint64(modulus, 2),
+		new(uint256.Int).Rsh(modulus, 1),
+		uint256.NewInt(math.MaxUint64), pow2(64), pow2(128), pow2(192), pow2(253),
+	}
+	for _, a := range edges {
+		for _, b := range edges {
+			check(a, b)
+		}
+	}
+	rng := rand.New(rand.NewPCG(1, 2))
+	random := func() *uint256.Int {
+		x := &uint256.Int{rng.Uint64(), rng.Uint64(), rng.Uint64(), rng.Uint64()}
+		return x.Mod(x, modulus)
+	}
+	for range 1000 {
+		check(random(), random())
+	}
+}
+
+func TestIsCanonical(t *testing.T) {
+	for _, tc := range []struct {
+		x    *uint256.Int
+		want bool
+	}{
+		{uint256.NewInt(0), true},
+		{new(uint256.Int).SubUint64(modulus, 1), true},
+		{modulus, false},
+		{new(uint256.Int).AddUint64(modulus, 1), false},
+		{new(uint256.Int).SetAllOne(), false},
+	} {
+		if got := IsCanonical(tc.x); got != tc.want {
+			t.Errorf("IsCanonical(%s) = %v, want %v", tc.x.Hex(), got, tc.want)
 		}
 	}
 }
