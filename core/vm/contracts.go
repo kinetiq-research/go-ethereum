@@ -214,8 +214,8 @@ func init() {
 
 func activePrecompiledContracts(rules params.Rules) PrecompiledContracts {
 	switch {
-	case rules.IsGreaterEqual62:
-		return PrecompiledContractsStartingFromArbOS62
+	case rules.IsGreaterEqual65:
+		return PrecompiledContractsStartingFromArbOS65
 	case rules.IsElara:
 		return PrecompiledContractsStartingFromArbOS60
 	case rules.IsDia:
@@ -253,8 +253,8 @@ func ActivePrecompiledContracts(rules params.Rules) PrecompiledContracts {
 // ActivePrecompiles returns the precompile addresses enabled with the current configuration.
 func ActivePrecompiles(rules params.Rules) []common.Address {
 	switch {
-	case rules.IsGreaterEqual62:
-		return PrecompiledAddressesStartingFromArbOS62
+	case rules.IsGreaterEqual65:
+		return PrecompiledAddressesStartingFromArbOS65
 	case rules.IsElara:
 		return PrecompiledAddressesStartingFromArbOS60
 	case rules.IsDia:

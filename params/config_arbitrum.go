@@ -43,7 +43,11 @@ const ArbosVersion_51 = uint64(51)
 const ArbosVersion_59 = uint64(59)
 const ArbosVersion_60 = uint64(60)
 const ArbosVersion_61 = uint64(61)
-const ArbosVersion_62 = uint64(62)
+
+// Elysium-specific ArbOS versions start at 65; 62-64 are unused.
+// Upstream versions arriving through a sync need a manual decision: a chain
+// already at an Elysium version never runs the upgrade step of a lower version.
+const ArbosVersion_65 = uint64(65)
 
 // TODO make sure that this is the version that should gate Amsterdam fork
 const ArbosVersion_Amsterdam = uint64(70)
@@ -52,8 +56,8 @@ const ArbosVersion_FixRedeemGas = ArbosVersion_11
 const ArbosVersion_Stylus = ArbosVersion_30
 const ArbosVersion_StylusFixes = ArbosVersion_31
 const ArbosVersion_StylusChargingFixes = ArbosVersion_32
-const MaxArbosVersionSupported = ArbosVersion_62
-const MaxDebugArbosVersionSupported = ArbosVersion_62
+const MaxArbosVersionSupported = ArbosVersion_65
+const MaxDebugArbosVersionSupported = ArbosVersion_65
 const ArbosVersion_Dia = ArbosVersion_50
 const ArbosVersion_Elara = ArbosVersion_60
 
@@ -64,8 +68,9 @@ const ArbosVersion_StylusContractLimit = ArbosVersion_60
 const ArbosVersion_TransactionFiltering = ArbosVersion_60
 const ArbosVersion_StylusActivationGas = ArbosVersion_60
 const ArbosVersion_MultiGasRefundFix = ArbosVersion_61
+const ArbosVersion_PoseidonPrecompile = ArbosVersion_65
 
-// PoseidonHashGas is the fixed cost of the Poseidon native precompile (ArbOS 62+).
+// PoseidonHashGas is the fixed cost of the Poseidon native precompile (ArbOS 65+).
 // The input has a fixed size, so the cost covers only the permutation: 828 field
 // multiplications over the BN254 scalar field. Calldata is priced by the
 // existing intrinsic and L1 poster charges; the precompile does not price it again.

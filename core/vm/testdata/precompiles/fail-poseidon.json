@@ -58,5 +58,10 @@
     "Input": "0130644e72e131a029b85045b68181585d2833e84879b9709143e1f593f000000130644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001",
     "ExpectedError": "poseidon input is not a canonical field element",
     "Name": "x and y equal modulus"
+  },
+  {
+    "Input": "0230644e72e131a029b85045b68181585d2833e84879b9709143e1f593f00000010000000000000000000000000000000000000000000000000000000000000001",
+    "ExpectedError": "unknown poseidon profile",
+    "Name": "profile 0x02 with x equal to modulus"
   }
 ]

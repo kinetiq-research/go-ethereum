@@ -34,9 +34,9 @@ func init() {
 	allPrecompiles[PoseidonPrecompileAddress] = &poseidonHash{}
 }
 
-func TestPrecompiledPoseidon(t *testing.T)      { testJson("poseidon", "0102", t) }
-func TestPrecompiledPoseidonFail(t *testing.T)  { testJsonFail("poseidon", "0102", t) }
-func BenchmarkPrecompiledPoseidon(b *testing.B) { benchJson("poseidon", "0102", b) }
+func TestPrecompiledPoseidon(t *testing.T)      { testJson("poseidon", "e100", t) }
+func TestPrecompiledPoseidonFail(t *testing.T)  { testJsonFail("poseidon", "e100", t) }
+func BenchmarkPrecompiledPoseidon(b *testing.B) { benchJson("poseidon", "e100", b) }
 
 func TestPrecompiledPoseidonOOG(t *testing.T) {
 	tests, err := loadJson("poseidon")
@@ -44,20 +44,20 @@ func TestPrecompiledPoseidonOOG(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, test := range tests {
-		testPrecompiledOOG("0102", test, t)
+		testPrecompiledOOG("e100", test, t)
 	}
 }
 
 // TestPoseidonActivation calls the precompile through the EVM and checks that
-// it is active from ArbOS 62 on Arbitrum chains and nowhere else.
+// it is active from ArbOS 65 on Arbitrum chains and nowhere else.
 func TestPoseidonActivation(t *testing.T) {
 	// Nitro's gethhook fills the per-ArbOS-version precompile sets. Do the same
-	// for ArbOS 62; the older sets stay empty.
-	PrecompiledContractsStartingFromArbOS62[PoseidonPrecompileAddress] = PrecompiledContractsPoseidon[PoseidonPrecompileAddress]
-	PrecompiledAddressesStartingFromArbOS62 = []common.Address{PoseidonPrecompileAddress}
+	// for ArbOS 65; the older sets stay empty.
+	PrecompiledContractsStartingFromArbOS65[PoseidonPrecompileAddress] = PrecompiledContractsPoseidon[PoseidonPrecompileAddress]
+	PrecompiledAddressesStartingFromArbOS65 = []common.Address{PoseidonPrecompileAddress}
 	t.Cleanup(func() {
-		delete(PrecompiledContractsStartingFromArbOS62, PoseidonPrecompileAddress)
-		PrecompiledAddressesStartingFromArbOS62 = nil
+		delete(PrecompiledContractsStartingFromArbOS65, PoseidonPrecompileAddress)
+		PrecompiledAddressesStartingFromArbOS65 = nil
 	})
 
 	const gas = 100_000
@@ -77,9 +77,10 @@ func TestPoseidonActivation(t *testing.T) {
 		active   bool
 	}{
 		{"ArbOS 61", true, params.ArbosVersion_61, false},
-		{"ArbOS 62", true, params.ArbosVersion_62, true},
-		{"ArbOS 63", true, params.ArbosVersion_62 + 1, true},
-		{"not Arbitrum", false, params.ArbosVersion_62, false},
+		{"ArbOS 64", true, params.ArbosVersion_PoseidonPrecompile - 1, false},
+		{"ArbOS 65", true, params.ArbosVersion_PoseidonPrecompile, true},
+		{"ArbOS 66", true, params.ArbosVersion_PoseidonPrecompile + 1, true},
+		{"not Arbitrum", false, params.ArbosVersion_PoseidonPrecompile, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			chainConfig := *params.TestChainConfig
