@@ -1,0 +1,67 @@
+[
+  {
+    "Input": "",
+    "ExpectedError": "invalid poseidon input length",
+    "Name": "empty input"
+  },
+  {
+    "Input": "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001",
+    "ExpectedError": "invalid poseidon input length",
+    "Name": "missing profile byte (64 bytes)"
+  },
+  {
+    "Input": "010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100",
+    "ExpectedError": "invalid poseidon input length",
+    "Name": "trailing byte (66 bytes)"
+  },
+  {
+    "Input": "0000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001",
+    "ExpectedError": "unknown poseidon profile",
+    "Name": "profile 0x00"
+  },
+  {
+    "Input": "0200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001",
+    "ExpectedError": "unknown poseidon profile",
+    "Name": "profile 0x02"
+  },
+  {
+    "Input": "0130644e72e131a029b85045b68181585d2833e84879b9709143e1f593f00000010000000000000000000000000000000000000000000000000000000000000001",
+    "ExpectedError": "poseidon input is not a canonical field element",
+    "Name": "x equals modulus"
+  },
+  {
+    "Input": "01000000000000000000000000000000000000000000000000000000000000000130644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001",
+    "ExpectedError": "poseidon input is not a canonical field element",
+    "Name": "y equals modulus"
+  },
+  {
+    "Input": "01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000001",
+    "ExpectedError": "poseidon input is not a canonical field element",
+    "Name": "x is 2^256-1"
+  },
+  {
+    "Input": "01",
+    "ExpectedError": "invalid poseidon input length",
+    "Name": "profile byte only (1 byte)"
+  },
+  {
+    "Input": "01000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001",
+    "ExpectedError": "invalid poseidon input length",
+    "Name": "three field elements (97 bytes)"
+  },
+  {
+    "Input": "010000000000000000000000000000000000000000000000000000000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "ExpectedError": "poseidon input is not a canonical field element",
+    "Name": "y is 2^256-1"
+  },
+  {
+    "Input": "0130644e72e131a029b85045b68181585d2833e84879b9709143e1f593f000000130644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001",
+    "ExpectedError": "poseidon input is not a canonical field element",
+    "Name": "x and y equal modulus"
+  },
+  {
+    "Input": "0230644e72e131a029b85045b68181585d2833e84879b9709143e1f593f00000010000000000000000000000000000000000000000000000000000000000000001",
+    "ExpectedError": "unknown poseidon profile",
+    "Name": "profile 0x02 with x equal to modulus"
+  }
+]

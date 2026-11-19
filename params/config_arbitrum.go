@@ -44,6 +44,17 @@ const ArbosVersion_59 = uint64(59)
 const ArbosVersion_60 = uint64(60)
 const ArbosVersion_61 = uint64(61)
 
+// Elysium-specific ArbOS versions start at 65 and must stay below
+// ArbosVersion_Amsterdam; 62-64 are unused and behave like 61.
+//
+// Sync rule: an upstream version at or below a version an Elysium chain has
+// already activated needs a manual decision. Version gates are ">="
+// comparisons, so its features switch on when the new binary starts, and the
+// chain never runs its upgrade step. Re-gate such features at a new Elysium
+// version, and do not take upstream's MaxArbosVersionSupported without that
+// decision.
+const ArbosVersion_65 = uint64(65)
+
 // TODO make sure that this is the version that should gate Amsterdam fork
 const ArbosVersion_Amsterdam = uint64(70)
 
@@ -51,8 +62,8 @@ const ArbosVersion_FixRedeemGas = ArbosVersion_11
 const ArbosVersion_Stylus = ArbosVersion_30
 const ArbosVersion_StylusFixes = ArbosVersion_31
 const ArbosVersion_StylusChargingFixes = ArbosVersion_32
-const MaxArbosVersionSupported = ArbosVersion_61
-const MaxDebugArbosVersionSupported = ArbosVersion_61
+const MaxArbosVersionSupported = ArbosVersion_65
+const MaxDebugArbosVersionSupported = ArbosVersion_65
 const ArbosVersion_Dia = ArbosVersion_50
 const ArbosVersion_Elara = ArbosVersion_60
 
@@ -63,6 +74,13 @@ const ArbosVersion_StylusContractLimit = ArbosVersion_60
 const ArbosVersion_TransactionFiltering = ArbosVersion_60
 const ArbosVersion_StylusActivationGas = ArbosVersion_60
 const ArbosVersion_MultiGasRefundFix = ArbosVersion_61
+const ArbosVersion_PoseidonPrecompile = ArbosVersion_65
+
+// PoseidonHashGas is the fixed cost of the Poseidon native precompile (ArbOS 65+).
+// The input has a fixed size, so the cost covers only the permutation: 828 field
+// multiplications over the BN254 scalar field. Calldata is priced by the
+// existing intrinsic and L1 poster charges; the precompile does not price it again.
+const PoseidonHashGas uint64 = 3000
 
 const DefaultMaxUncompressedBatchSize = 16 * 1024 * 1024 // 16 MB
 

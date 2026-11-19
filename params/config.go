@@ -1450,6 +1450,7 @@ func (err *ConfigCompatError) Error() string {
 // phases.
 type Rules struct {
 	IsArbitrum, IsStylus, IsGreaterEqual41, IsDia, IsElara  bool
+	IsGreaterEqual65                                        bool
 	ArbOSVersion                                            uint64
 	IsHomestead, IsEIP150, IsEIP155, IsEIP158               bool
 	IsEIP2929, IsEIP4762                                    bool
@@ -1492,6 +1493,7 @@ func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64, curren
 		IsGreaterEqual41: c.IsArbitrum() && currentArbosVersion >= ArbosVersion_41,
 		IsDia:            c.IsArbitrum() && currentArbosVersion >= ArbosVersion_Dia,
 		IsElara:          c.IsArbitrum() && currentArbosVersion >= ArbosVersion_Elara,
+		IsGreaterEqual65: c.IsArbitrum() && currentArbosVersion >= ArbosVersion_65,
 		ArbOSVersion:     currentArbosVersion,
 		IsHomestead:      c.IsHomestead(num),
 		IsEIP150:         c.IsEIP150(num),
