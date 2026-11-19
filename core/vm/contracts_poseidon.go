@@ -27,8 +27,8 @@ import (
 
 // PoseidonPrecompileAddress is the address of the Poseidon native precompile.
 // Elysium native precompiles use 0xe100-0xe1ff: outside the Ethereum
-// precompiles, the range EIP-7587 reserves for RIPs (0x100-0x1ff) and the
-// ArbOS precompiles (0x64-0xff).
+// precompiles, the range EIP-7587 reserves for RIPs (0x100-0x1ff), the ArbOS
+// precompiles (0x64-0xff) and the ArbOS address (0xa4b05).
 var PoseidonPrecompileAddress = common.BytesToAddress([]byte{0xe1, 0x00})
 
 // PrecompiledContractsPoseidon contains the Poseidon native precompile, active from ArbosVersion_PoseidonPrecompile.

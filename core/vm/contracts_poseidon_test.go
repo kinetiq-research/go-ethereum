@@ -51,6 +51,12 @@ func TestPrecompiledPoseidonOOG(t *testing.T) {
 // TestPoseidonActivation calls the precompile through the EVM and checks that
 // it is active from ArbOS 65 on Arbitrum chains and nowhere else.
 func TestPoseidonActivation(t *testing.T) {
+	// The activation version is a consensus rule: pin the number, and check that
+	// the node accepts a chain at that version.
+	if params.ArbosVersion_PoseidonPrecompile != 65 || params.MaxArbosVersionSupported < 65 {
+		t.Fatalf("Poseidon activates at ArbOS %d, max supported ArbOS %d; want 65 and at least 65",
+			params.ArbosVersion_PoseidonPrecompile, params.MaxArbosVersionSupported)
+	}
 	// Nitro's gethhook fills the per-ArbOS-version precompile sets. Do the same
 	// for ArbOS 65; the older sets stay empty.
 	PrecompiledContractsStartingFromArbOS65[PoseidonPrecompileAddress] = PrecompiledContractsPoseidon[PoseidonPrecompileAddress]
@@ -76,11 +82,13 @@ func TestPoseidonActivation(t *testing.T) {
 		arbos    uint64
 		active   bool
 	}{
-		{"ArbOS 61", true, params.ArbosVersion_61, false},
-		{"ArbOS 64", true, params.ArbosVersion_PoseidonPrecompile - 1, false},
-		{"ArbOS 65", true, params.ArbosVersion_PoseidonPrecompile, true},
-		{"ArbOS 66", true, params.ArbosVersion_PoseidonPrecompile + 1, true},
-		{"not Arbitrum", false, params.ArbosVersion_PoseidonPrecompile, false},
+		{"ArbOS 61", true, 61, false},
+		{"ArbOS 62", true, 62, false},
+		{"ArbOS 63", true, 63, false},
+		{"ArbOS 64", true, 64, false},
+		{"ArbOS 65", true, 65, true},
+		{"ArbOS 66", true, 66, true},
+		{"not Arbitrum", false, 65, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			chainConfig := *params.TestChainConfig

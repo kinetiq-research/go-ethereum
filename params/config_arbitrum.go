@@ -44,9 +44,15 @@ const ArbosVersion_59 = uint64(59)
 const ArbosVersion_60 = uint64(60)
 const ArbosVersion_61 = uint64(61)
 
-// Elysium-specific ArbOS versions start at 65; 62-64 are unused.
-// Upstream versions arriving through a sync need a manual decision: a chain
-// already at an Elysium version never runs the upgrade step of a lower version.
+// Elysium-specific ArbOS versions start at 65 and must stay below
+// ArbosVersion_Amsterdam; 62-64 are unused and behave like 61.
+//
+// Sync rule: an upstream version at or below a version an Elysium chain has
+// already activated needs a manual decision. Version gates are ">="
+// comparisons, so its features switch on when the new binary starts, and the
+// chain never runs its upgrade step. Re-gate such features at a new Elysium
+// version, and do not take upstream's MaxArbosVersionSupported without that
+// decision.
 const ArbosVersion_65 = uint64(65)
 
 // TODO make sure that this is the version that should gate Amsterdam fork
