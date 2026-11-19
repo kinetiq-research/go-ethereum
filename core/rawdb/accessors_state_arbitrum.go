@@ -118,41 +118,46 @@ func IsSupportedWasmTarget(target WasmTarget) bool {
 	return err == nil
 }
 
-func WriteActivation(db ethdb.KeyValueWriter, moduleHash common.Hash, asmMap map[WasmTarget][]byte) {
+func WriteActivation(db ethdb.KeyValueWriter, moduleHash common.Hash, asmMap map[WasmTarget][]byte) error {
 	for target, asm := range asmMap {
 		if target != TargetWasm {
-			WriteActivatedAsm(db, target, moduleHash, asm)
+			err := WriteActivatedAsm(db, target, moduleHash, asm)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // Stores the activated asm for a given moduleHash and target
-func WriteActivatedAsm(db ethdb.KeyValueWriter, target WasmTarget, moduleHash common.Hash, asm []byte) {
+func WriteActivatedAsm(db ethdb.KeyValueWriter, target WasmTarget, moduleHash common.Hash, asm []byte) error {
 	prefix, err := activatedAsmKeyPrefix(target)
 	if err != nil {
-		log.Crit("Failed to store activated wasm asm", "err", err)
+		return fmt.Errorf("Failed to store activated wasm asm: %w", err)
 	}
 	key := activatedKey(prefix, moduleHash)
 	if err := db.Put(key[:], asm); err != nil {
-		log.Crit("Failed to store activated wasm asm", "err", err)
+		return fmt.Errorf("Failed to store activated wasm key: %w", err)
 	}
+	return nil
 }
 
 // Retrieves the activated asm for a given moduleHash and target
-func ReadActivatedAsm(db ethdb.KeyValueReader, target WasmTarget, moduleHash common.Hash) []byte {
+func ReadActivatedAsm(db ethdb.KeyValueReader, target WasmTarget, moduleHash common.Hash) ([]byte, error) {
 	if target == TargetWasm {
-		return nil // wasm is not stored in the database
+		return nil, nil // wasm is not stored in the database
 	}
 	prefix, err := activatedAsmKeyPrefix(target)
 	if err != nil {
-		log.Crit("Failed to read activated wasm asm", "err", err)
+		return nil, fmt.Errorf("Failed to read activated wasm asm: %w", err)
 	}
 	key := activatedKey(prefix, moduleHash)
 	asm, err := db.Get(key[:])
 	if err != nil {
-		return nil
+		return nil, nil
 	}
-	return asm
+	return asm, nil
 }
 
 // Stores wasm schema version
@@ -179,6 +184,28 @@ func ReadWasmerSerializeVersion(db ethdb.KeyValueReader) (uint32, error) {
 	buf, err := db.Get(wasmerSerializeVersionKey)
 	if err != nil {
 		return 0, err
+	}
+	version := binary.BigEndian.Uint32(buf)
+	return version, nil
+}
+
+// Stores wavm serialize version
+func WriteWavmSerializeVersion(db ethdb.KeyValueWriter, wavmSerializeVersion uint32) error {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, wavmSerializeVersion)
+	return db.Put(wavmSerializeVersionKey, buf)
+}
+
+// Retrieves wavm serialize version
+func ReadWavmSerializeVersion(db ethdb.KeyValueReader) (uint32, error) {
+	buf, err := db.Get(wavmSerializeVersionKey)
+	if err != nil {
+		return 0, err
+	}
+	// A truncated/partial write or future single-byte schema would
+	// otherwise panic with index out of range inside BigEndian.Uint32.
+	if len(buf) < 4 {
+		return 0, fmt.Errorf("wavm serialize version blob too short: got %d bytes, want at least 4", len(buf))
 	}
 	version := binary.BigEndian.Uint32(buf)
 	return version, nil

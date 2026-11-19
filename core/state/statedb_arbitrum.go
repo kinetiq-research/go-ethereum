@@ -240,7 +240,7 @@ func (s *StateDB) ActivatedAsm(target rawdb.WasmTarget, moduleHash common.Hash) 
 			return asm
 		}
 	}
-	return s.db.ActivatedAsm(target, moduleHash)
+	return s.db.CodeDB().ActivatedAsm(target, moduleHash)
 }
 
 // ActivatedAsmMap tries to read asm map (map from target to assembly binary) from newly activated wasms (StateDB.activatedWasm) first, then if not found tries to read the asm map from wasmdb.
@@ -266,7 +266,7 @@ func (s *StateDB) ActivatedAsmMap(targets []rawdb.WasmTarget, moduleHash common.
 	asmMap = make(map[rawdb.WasmTarget][]byte, len(targets))
 	var missingTargets []rawdb.WasmTarget
 	for _, target := range targets {
-		if asm := s.db.ActivatedAsm(target, moduleHash); len(asm) > 0 {
+		if asm := s.db.CodeDB().ActivatedAsm(target, moduleHash); len(asm) > 0 {
 			asmMap[target] = asm
 		} else {
 			missingTargets = append(missingTargets, target)
@@ -340,7 +340,9 @@ func (s *StateDB) Recording() bool {
 	return s.recording
 }
 
-var ErrArbTxFilter error = errors.New("internal error")
+const ChainPolicyRejectionMessage = "Transaction rejected by chain policy"
+
+var ErrSeqFilter error = errors.New(ChainPolicyRejectionMessage)
 
 // AddressCheckerState tracks address filtering for a single transaction.
 // Implementations manage their own synchronization (sync, WaitGroup, channels, etc).
@@ -390,7 +392,7 @@ func (s *StateDB) GetUnexpectedBalanceDelta() *big.Int {
 
 func (s *StateDB) GetSelfDestructs() []common.Address {
 	selfDestructs := []common.Address{}
-	for addr := range s.journal.dirties {
+	for addr := range s.journal.mutations {
 		obj, exist := s.stateObjects[addr]
 		if !exist {
 			continue
@@ -483,13 +485,13 @@ func (s *StateDB) GetRecentWasms() *RecentWasms {
 	return &s.arbExtraData.recentWasms
 }
 
-// Type for managing recent program access.
-// The cache contained is discarded at the end of each block.
+// RecentWasms tracks Stylus programs initialized earlier in the current block so a
+// repeat call is charged the cheaper cached init cost. It is reset each block
 type RecentWasms struct {
 	cache *lru.BasicLRU[common.Hash, struct{}]
 }
 
-// Creates an un uninitialized cache
+// Creates an uninitialized cache
 func NewRecentWasms() RecentWasms {
 	return RecentWasms{cache: nil}
 }
@@ -517,4 +519,11 @@ func (p RecentWasms) Copy() RecentWasms {
 		cache.Add(item, struct{}{})
 	}
 	return RecentWasms{cache: &cache}
+}
+
+// RestoreRecentWasms replaces the cache with a clone of r, used by the block
+// processor to undo warmings left by a dropped transaction. The clone keeps the
+// caller's snapshot independent so it can be restored more than once.
+func (s *StateDB) RestoreRecentWasms(r RecentWasms) {
+	s.arbExtraData.recentWasms = r.Copy()
 }
