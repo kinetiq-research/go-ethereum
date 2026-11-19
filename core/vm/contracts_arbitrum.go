@@ -16,7 +16,14 @@
 
 package vm
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"errors"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto/poseidon"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
+)
 
 var (
 	PrecompiledContractsBeforeArbOS30       = make(map[common.Address]PrecompiledContract)
@@ -29,4 +36,59 @@ var (
 	PrecompiledAddressesStartingFromArbOS50 []common.Address
 	PrecompiledContractsStartingFromArbOS60 = make(map[common.Address]PrecompiledContract)
 	PrecompiledAddressesStartingFromArbOS60 []common.Address
+	PrecompiledContractsStartingFromArbOS62 = make(map[common.Address]PrecompiledContract)
+	PrecompiledAddressesStartingFromArbOS62 []common.Address
 )
+
+// PoseidonPrecompileAddress is the address of the Poseidon native precompile.
+var PoseidonPrecompileAddress = common.BytesToAddress([]byte{0x01, 0x02})
+
+// PrecompiledContractsPoseidon contains the Poseidon native precompile, active from ArbOS 62.
+var PrecompiledContractsPoseidon = PrecompiledContracts{
+	PoseidonPrecompileAddress: &poseidonHash{},
+}
+
+// PoseidonProfileBN254T3 selects BN254 Poseidon with x^5 S-box, width 3,
+// 8 full and 57 partial rounds (circomlibjs / iden3 go-iden3-crypto v2.0.0).
+const PoseidonProfileBN254T3 = 0x01
+
+const poseidonInputLength = 1 + 2*32
+
+var (
+	errPoseidonInputLength    = errors.New("invalid poseidon input length")
+	errPoseidonUnknownProfile = errors.New("unknown poseidon profile")
+	errPoseidonNonCanonical   = errors.New("poseidon input is not a canonical field element")
+)
+
+// poseidonHash implements the Poseidon native precompile.
+//
+// Input (65 bytes): profile ID (1 byte) || x (32 bytes) || y (32 bytes), with x
+// and y big-endian and lower than the BN254 scalar field modulus.
+// Output (32 bytes): Poseidon(x, y), big-endian.
+type poseidonHash struct{}
+
+func (c *poseidonHash) RequiredGas(input []byte) uint64 {
+	return params.PoseidonHashGas
+}
+
+func (c *poseidonHash) Run(input []byte) ([]byte, error) {
+	if len(input) != poseidonInputLength {
+		return nil, errPoseidonInputLength
+	}
+	if input[0] != PoseidonProfileBN254T3 {
+		return nil, errPoseidonUnknownProfile
+	}
+	var x, y uint256.Int
+	x.SetBytes32(input[1:33])
+	y.SetBytes32(input[33:65])
+	if !poseidon.IsCanonical(&x) || !poseidon.IsCanonical(&y) {
+		return nil, errPoseidonNonCanonical
+	}
+	hash := poseidon.Hash2(&x, &y)
+	out := hash.Bytes32()
+	return out[:], nil
+}
+
+func (c *poseidonHash) Name() string {
+	return "POSEIDON"
+}

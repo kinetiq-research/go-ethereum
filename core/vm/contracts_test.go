@@ -61,6 +61,7 @@ var allPrecompiles = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{0x0a}): &kzgPointEvaluation{},
 
 	common.BytesToAddress([]byte{0x01, 0x00}): &p256Verify{},
+	common.BytesToAddress([]byte{0x01, 0x02}): &poseidonHash{},
 
 	common.BytesToAddress([]byte{0x0f, 0x0a}): &bls12381G1Add{},
 	common.BytesToAddress([]byte{0x0f, 0x0b}): &bls12381G1MultiExp{},
@@ -436,3 +437,17 @@ func BenchmarkPrecompiledP256Verify(bench *testing.B) {
 }
 
 func TestPrecompiledP256Verify(t *testing.T) { testJson("p256Verify", "0b", t) }
+
+func TestPrecompiledPoseidon(t *testing.T)      { testJson("poseidon", "0102", t) }
+func TestPrecompiledPoseidonFail(t *testing.T)  { testJsonFail("poseidon", "0102", t) }
+func BenchmarkPrecompiledPoseidon(b *testing.B) { benchJson("poseidon", "0102", b) }
+
+func TestPrecompiledPoseidonOOG(t *testing.T) {
+	tests, err := loadJson("poseidon")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range tests {
+		testPrecompiledOOG("0102", test, t)
+	}
+}
